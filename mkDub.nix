@@ -76,7 +76,7 @@ in {
     package ? importPackage dubSDL dubJSON,
     passthru ? {},
     ...
-  } @ attrs: stdenv.mkDerivation ((removeAttrs attrs ["package" "deps" "selections" "dubJSON" "dubSDL"]) // {
+  } @ attrs: stdenv.mkDerivation ({
 
     pname = package.name;
 
@@ -130,8 +130,8 @@ in {
     } // lib.optionalAttrs (package ? homepage) {
       homepage = package.homepage;
     } // attrs.meta or {};
-  } // lib.optionalAttrs (!(attrs ? version)) {
+  } // (lib.optionalAttrs (!(attrs ? version)) {
     # Use name from dub.json, unless pname and version are specified
     name = package.name;
-  }));
+  }) // (removeAttrs attrs ["package" "deps" "selections" "dubJSON" "dubSDL"])));
 }
