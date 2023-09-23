@@ -22,27 +22,28 @@ let
   fromDub = dubDep: mkDerivation rec {
     name = "${src.name}-${version}";
     version = rev-to-version dubDep.fetch.rev;
+    # to patch dub.json if needed
+    buildInputs = [pkgs.jq];
     nativeBuildInputs = [ dcompiler dtools dub ];
     src = dep2src dubDep;
 
-    buildPhase = ''
-      runHook preBuild
-      export HOME=$PWD
-      dub build -b=release
-      runHook postBuild
+    dontConfigure = true;
+    dontBuild = true;
+
+    patchPhase = ''
+      runHook prePatch
+      [ -f dub.json ] && jq 'del(.targetPath)' dub.json > dub.json.tmp && mv dub.json.tmp dub.json
+      [ -f dub.sdl ] && sed -i '/targetPath/d' dub.sdl
+      runHook postPatch
     '';
 
-    # outputs = [ "lib" ];
-
-    # installPhase = ''
-    #   runHook preInstall
-    #   mkdir -p $out/bin
-    #   runHook postInstall
-    # '';
+    installPhase = ''
+      cp -r . $out
+    '';
   };
 
   # Adds a local package directory (e.g. a git repository) to Dub
-  dub-add-local = dubDep: "dub add-local ${(fromDub dubDep).src.outPath} ${rev-to-version dubDep.fetch.rev}";
+  dub-add-local = dubDep: "dub add-local ${(fromDub dubDep).outPath} ${rev-to-version dubDep.fetch.rev}";
 
   # The target output of the Dub package
   targetOf = package: "${package.targetPath or "."}/${package.targetName or package.name}";
